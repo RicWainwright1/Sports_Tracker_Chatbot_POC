@@ -7,7 +7,7 @@ import base64
 from pathlib import Path
 from typing import List, Dict, Any
 
-# First Streamlit command must be set_page_config
+# First Streamlit command must be set_page_config - keep this at the top
 st.set_page_config(page_title="🎙️ TIF Sports Expert", layout="centered")
 
 # Create sidebar with settings
@@ -21,6 +21,7 @@ with st.sidebar:
     st.session_state.coach_mode = st.toggle(
         "Coach Mode", 
         value=st.session_state.coach_mode,
+        # adds some help text
         help="Turn on/off the enthusiastic sports commentator personality"
     )
     
@@ -36,6 +37,7 @@ with st.sidebar:
     )
 
     if "model" not in st.session_state:
+        # Default model
         st.session_state.model = "gpt-4o"
     
     st.session_state.model = st.selectbox(
@@ -48,11 +50,7 @@ with st.sidebar:
     # Show current settings
     st.caption(f"Current settings: {'Coach Mode ON' if st.session_state.coach_mode else 'Coach Mode OFF'}, {st.session_state.answer_length} answers, {st.session_state.model} model")
 
-    # NOTE: Bot update code moved to after SportsCommentatorBot class definition
-
-    
-
-# User context configuration - modify this to personalise responses for clients - this will come from the DB
+# User context configuration - this will come from the DB
 USER_CONTEXT = {
     "job_title": "Product Development Manager",
     "company": "Hasbro",
@@ -321,7 +319,7 @@ class MockVectorDB:
             # Boost similarity for exact term matches in content
             content_lower = doc["content"].lower()
             term_matches = sum(1 for term in query_terms if term in content_lower)
-            match_boost = min(term_matches * 0.05, 0.15)  # Up to 0.15 boost
+            match_boost = min(term_matches * 0.05, 0.15)  
             
             # Apply name-specific boosting
             doc_name_matches = [tag for tag in doc["tags"] if any(name in query.lower() for name in tag.split())]
