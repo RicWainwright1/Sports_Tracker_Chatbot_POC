@@ -1,0 +1,32 @@
+@font-face {
+  font-family: 'Mont';
+  src: url('../assets/Mont-Regular.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Mont';
+  src: url('../assets/Mont-Heavy.woff') format('woff');
+  font-weight: bold;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Mont';
+  src: url('../assets/Mont-Light.woff') format('woff');
+  font-weight: 300;
+  font-style: normal;
+}
+
+/* Apply font to all elements for better coverage */
+* {
+  font-family: 'Mont', sans-serif !important;
+}
+
+body {
+  font-family: 'Mont', sans-serif;
+}
+
+/* Style Streamlit elements */
+.stButton button, .stMarkdown, .stText, .stTitle, h1, h2, h3, p {
+  font-family: 'Mont', sans-serif !important;
+}
