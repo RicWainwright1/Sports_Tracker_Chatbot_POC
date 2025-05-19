@@ -75,7 +75,6 @@ try:
     """
     
     st.markdown(f"<style>{css}</style>", unsafe_allow_html=True)
-    st.success("Font CSS injected with more aggressive targeting")
 except Exception as e:
     st.error(f"Error loading fonts: {e}")
 
