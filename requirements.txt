@@ -2,7 +2,7 @@ streamlit
 python-dotenv
 openai
 numpy
-pinecone-client
+pinecone
 anthropic
 langchain-community
 elevenlabs
