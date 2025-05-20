@@ -157,7 +157,8 @@ def get_audio_player_simple(text, voice_id=None, speed=1.0):
     """Simplified audio player that focuses on basic functionality"""
     try:
         # Get API key with better visibility
-        elevenlabs_api_key = os.environ.get("ELEVEN_API_KEY")
+        # elevenlabs_api_key = os.environ.get("ELEVEN_API_KEY")
+        elevenlabs_api_key = st.secrets["ELEVEN_API_KEY"]
         if not elevenlabs_api_key:
             print("⚠️ No ElevenLabs API key found!")
             return "<p>Error: No API key found</p>"
@@ -447,8 +448,9 @@ def extract_and_print_gathered_info(conversation_history):
 inject_font_css()
 
 # Load .env variables
-load_dotenv()
-openai.api_key = os.getenv("OPENAI_API_KEY")
+# load_dotenv()
+# openai.api_key = os.getenv("OPENAI_API_KEY")
+openai.api_key = st.secrets["OPENAI_API_KEY"]
 
 
 class PineconeVectorDB:
@@ -596,8 +598,10 @@ class SportsCommentatorBot:
         try:
             print("Attempting to connect to Pinecone...")
             # Get API key from environment variables
-            pinecone_api_key = os.getenv("PINECONE_API_KEY")
-            pinecone_environment = os.getenv("PINECONE_ENVIRONMENT", "us-east-1")
+            pinecone_api_key = st.secrets["PINECONE_API_KEY"]
+            pinecone_environment = st.secrets["PINECONE_ENVIRONMENT"]
+            # pinecone_api_key = os.getenv("PINECONE_API_KEY")
+            # pinecone_environment = os.getenv("PINECONE_ENVIRONMENT", "us-east-1")
             
             if pinecone_api_key:
                 self.vector_db = PineconeVectorDB(
@@ -704,7 +708,8 @@ class SportsCommentatorBot:
                 import json
                 
                 # Get X.AI API key from environment
-                xai_api_key = os.getenv("XAI_API_KEY")
+                xai_api_key = st.secrets["XAI_API_KEY"]
+                # xai_api_key = os.getenv("XAI_API_KEY")
                 if not xai_api_key:
                     raise ValueError("XAI_API_KEY not found in environment variables")
                 
@@ -931,8 +936,8 @@ class SportsCommentatorBot:
         if self.model == "claude-3-7-sonnet":
             try:
                 import anthropic
-                client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
-                
+                # client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+                client = anthropic.Anthropic(api_key=st.secrets["ANTHROPIC_API_KEY"])
                 # Convert messages to Claude format
                 claude_messages = []
                 for msg in messages:
