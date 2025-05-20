@@ -1,0 +1,8 @@
+streamlit
+python-dotenv
+openai
+numpy
+pinecone-client
+anthropic
+langchain-community
+elevenlabs
