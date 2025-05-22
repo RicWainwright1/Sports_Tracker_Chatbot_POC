@@ -1085,52 +1085,6 @@ for idx, msg in enumerate(st.session_state.history):
     else:  # assistant message
         with st.chat_message("assistant", avatar="tif_shield_small.png"): 
             st.markdown(msg["content"])
-            # Add feedback buttons and copy button in a row with custom styling
-            st.markdown("""
-                <style>
-                    div[data-testid="stButton"] button {
-                        padding: 0.2rem 0.5rem;
-                        font-size: 0.8rem;
-                        min-height: 1.5rem;
-                        width: 2rem;
-                    }
-                </style>
-            """, unsafe_allow_html=True)
-            col1, col2, col3 = st.columns([1, 1, 3])
-            with col1:
-                thumbs_up = st.button("👍", key=f"thumbs_up_hist_{idx}")
-                if thumbs_up:
-                    try:
-                        # Log positive feedback in LangSmith
-                        if hasattr(msg, 'get') and msg.get("run_id"):
-                            langsmith_client.create_feedback(
-                                run_id=msg.get("run_id"),
-                                key="user_feedback",
-                                score=1.0,
-                                comment="User provided positive feedback"
-                            )
-                    except Exception as e:
-                        print(f"Error logging feedback to LangSmith: {e}")
-                    st.toast("Thanks for your positive feedback!")
-            with col2:
-                thumbs_down = st.button("👎", key=f"thumbs_down_hist_{idx}")
-                if thumbs_down:
-                    try:
-                        # Log negative feedback in LangSmith
-                        if hasattr(msg, 'get') and msg.get("run_id"):
-                            langsmith_client.create_feedback(
-                                run_id=msg.get("run_id"),
-                                key="user_feedback",
-                                score=0.0,
-                                comment="User provided negative feedback"
-                            )
-                    except Exception as e:
-                        print(f"Error logging feedback to LangSmith: {e}")
-                    st.toast("Thanks for your feedback! We'll use it to improve.")
-            with col3:
-                copy_btn = st.button("📋", key=f"copy_hist_{idx}")
-                if copy_btn:
-                    st.toast("Copied to clipboard!")
 
 # Welcome message only once
 if not st.session_state.history:
@@ -1154,17 +1108,81 @@ if user_input:
 
     with st.chat_message("assistant", avatar="tif_shield_small.png"):
         with st.spinner("Getting the insights..."):
-            # Get both debug info and reply from generate_response
-            debug_info, reply, run_id = st.session_state.bot.generate_response(user_input, st.session_state.history)
+            # Get debug info, reply, and run_id from generate_response
+            result = st.session_state.bot.generate_response(user_input, st.session_state.history)
             
-            # Store the run_id in session state for feedback tracking
-            st.session_state.current_run_id = run_id
+            # Handle the tuple unpacking correctly
+            if len(result) == 3:
+                debug_info, reply, run_id = result
+            else:
+                debug_info, reply = result
+                run_id = None
             
             # Display debug info followed by reply
             if st.session_state.get("show_debug", True):
                 st.markdown(debug_info + reply)
             else:
                 st.markdown(reply)
+            
+            # Add feedback buttons ONLY for the current response
+            st.markdown("""
+                <style>
+                    div[data-testid="stButton"] button {
+                        padding: 0.2rem 0.5rem;
+                        font-size: 0.8rem;
+                        min-height: 1.5rem;
+                        width: 2rem;
+                    }
+                </style>
+            """, unsafe_allow_html=True)
+            
+            col1, col2, col3 = st.columns([1, 1, 3])
+            with col1:
+                current_thumbs_up = st.button("👍", key=f"current_thumbs_up")
+                if current_thumbs_up:
+                    try:
+                        # Log positive feedback in LangSmith
+                        if run_id:
+                            langsmith_client.create_feedback(
+                                run_id=run_id,
+                                key="user_feedback",
+                                score=1.0,
+                                comment="User provided positive feedback"
+                            )
+                            print(f"✅ Positive feedback logged for run_id: {run_id}")
+                        else:
+                            print("⚠️ No run_id available for feedback")
+                    except Exception as e:
+                        print(f"❌ Error logging positive feedback to LangSmith: {e}")
+                        import traceback
+                        print(traceback.format_exc())
+                    st.toast("Thanks for your positive feedback!")
+            
+            with col2:
+                current_thumbs_down = st.button("👎", key=f"current_thumbs_down")
+                if current_thumbs_down:
+                    try:
+                        # Log negative feedback in LangSmith
+                        if run_id:
+                            langsmith_client.create_feedback(
+                                run_id=run_id,
+                                key="user_feedback",
+                                score=0.0,
+                                comment="User provided negative feedback"
+                            )
+                            print(f"✅ Negative feedback logged for run_id: {run_id}")
+                        else:
+                            print("⚠️ No run_id available for feedback")
+                    except Exception as e:
+                        print(f"❌ Error logging negative feedback to LangSmith: {e}")
+                        import traceback
+                        print(traceback.format_exc())
+                    st.toast("Thanks for your feedback! We'll use it to improve.")
+            
+            with col3:
+                current_copy_btn = st.button("📋", key=f"current_copy")
+                if current_copy_btn:
+                    st.toast("Copied to clipboard!")
             
             # Auto-generate audio if enabled
             if st.session_state.get("auto_audio", False):
@@ -1176,8 +1194,8 @@ if user_input:
                         # Get voice settings from session state
                         voice_id = st.session_state.get("voice_id", "JBFqnCBsd6RMkjVDRZzb")
                         
-                        # Get ElevenLabs API key
-                        elevenlabs_api_key = os.environ.get("ELEVEN_API_KEY")
+                        # Get ElevenLabs API key - FIXED to use st.secrets
+                        elevenlabs_api_key = st.secrets["ELEVEN_API_KEY"]
                         if not elevenlabs_api_key:
                             st.error("ElevenLabs API key not found. Please add it to your environment.")
                         else:
@@ -1224,7 +1242,7 @@ if user_input:
                         import traceback
                         st.code(traceback.format_exc())
     
-    # Only store the actual reply in conversation history, not the debug info
+    # Store the actual reply in conversation history with run_id
     st.session_state.history.append({
         "role": "assistant", 
         "content": reply,
