@@ -1127,16 +1127,41 @@ if user_input:
             # Add feedback buttons ONLY for the current response
             st.markdown("""
                 <style>
+                    /* Remove borders and padding from button containers */
+                    div[data-testid="column"] {
+                        border: none !important;
+                        padding: 0 !important;
+                        margin: 0 !important;
+                    }
+                    
+                    /* Style the buttons to be compact and inline */
                     div[data-testid="stButton"] button {
-                        padding: 0.2rem 0.5rem;
-                        font-size: 0.8rem;
-                        min-height: 1.5rem;
-                        width: 2rem;
+                        padding: 0.25rem 0.5rem !important;
+                        font-size: 1rem !important;
+                        min-height: 2rem !important;
+                        width: auto !important;
+                        margin: 0.1rem !important;
+                        border: none !important;
+                        background: transparent !important;
+                        box-shadow: none !important;
+                    }
+                    
+                    /* Hover effects */
+                    div[data-testid="stButton"] button:hover {
+                        background: rgba(0,0,0,0.05) !important;
+                        transform: scale(1.1);
+                    }
+                    
+                    /* Remove column gaps */
+                    .row-widget.stHorizontal {
+                        gap: 0 !important;
                     }
                 </style>
             """, unsafe_allow_html=True)
             
-            col1, col2, col3 = st.columns([1, 1, 3])
+            # Create columns with minimal spacing
+            col1, col2, col3, col4 = st.columns([1, 1, 1, 10])
+            
             with col1:
                 current_thumbs_up = st.button("👍", key=f"current_thumbs_up")
                 if current_thumbs_up:
