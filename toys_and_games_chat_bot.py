@@ -1069,7 +1069,7 @@ if "bot" not in st.session_state:
     st.session_state.bot = SportsCommentatorBot(model=st.session_state.model)
 
 # Display prior messages only once and maintain scroll state
-for msg in st.session_state.history:
+for idx, msg in enumerate(st.session_state.history):
     if msg["role"] == "user":
         with st.chat_message("user"):
             st.markdown(msg["content"])
@@ -1089,21 +1089,13 @@ for msg in st.session_state.history:
             """, unsafe_allow_html=True)
             col1, col2, col3 = st.columns([1, 1, 3])
             with col1:
-                if st.button("👍", key=f"thumbs_up_{len(st.session_state.history)}"):
+                if st.button("👍", key=f"thumbs_up_hist_{idx}"):
                     st.toast("Thanks for your positive feedback!")
             with col2:
-                if st.button("👎", key=f"thumbs_down_{len(st.session_state.history)}"):
+                if st.button("👎", key=f"thumbs_down_hist_{idx}"):
                     st.toast("Thanks for your feedback! We'll use it to improve.")
             with col3:
-                if st.button("📋", key=f"copy_{len(st.session_state.history)}"):
-                    # Get the text to copy (either debug info + reply or just reply)
-                    text_to_copy = debug_info + reply if st.session_state.get("show_debug", True) else reply
-                    # Use JavaScript to copy to clipboard
-                    st.markdown(f"""
-                    <script>
-                        navigator.clipboard.writeText(`{text_to_copy.replace('`', '\\`')}`);
-                    </script>
-                    """, unsafe_allow_html=True)
+                if st.button("📋", key=f"copy_hist_{idx}"):
                     st.toast("Copied to clipboard!")
 
 # Welcome message only once
