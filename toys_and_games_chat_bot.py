@@ -1098,35 +1098,38 @@ for idx, msg in enumerate(st.session_state.history):
             """, unsafe_allow_html=True)
             col1, col2, col3 = st.columns([1, 1, 3])
             with col1:
-                if st.button("👍", key=f"thumbs_up_hist_{idx}"):
+                thumbs_up = st.button("👍", key=f"thumbs_up_hist_{idx}")
+                if thumbs_up:
                     try:
                         # Log positive feedback in LangSmith
-                        langsmith_client.create_feedback(
-                            run_id=msg.get("run_id", "unknown"),
-                            key="user_feedback",
-                            score=1.0,
-                            comment="User provided positive feedback"
-                        )
-                        st.toast("Thanks for your positive feedback!")
+                        if hasattr(msg, 'get') and msg.get("run_id"):
+                            langsmith_client.create_feedback(
+                                run_id=msg.get("run_id"),
+                                key="user_feedback",
+                                score=1.0,
+                                comment="User provided positive feedback"
+                            )
                     except Exception as e:
                         print(f"Error logging feedback to LangSmith: {e}")
-                        st.toast("Thanks for your positive feedback!")
+                    st.toast("Thanks for your positive feedback!")
             with col2:
-                if st.button("👎", key=f"thumbs_down_hist_{idx}"):
+                thumbs_down = st.button("👎", key=f"thumbs_down_hist_{idx}")
+                if thumbs_down:
                     try:
                         # Log negative feedback in LangSmith
-                        langsmith_client.create_feedback(
-                            run_id=msg.get("run_id", "unknown"),
-                            key="user_feedback",
-                            score=0.0,
-                            comment="User provided negative feedback"
-                        )
-                        st.toast("Thanks for your feedback! We'll use it to improve.")
+                        if hasattr(msg, 'get') and msg.get("run_id"):
+                            langsmith_client.create_feedback(
+                                run_id=msg.get("run_id"),
+                                key="user_feedback",
+                                score=0.0,
+                                comment="User provided negative feedback"
+                            )
                     except Exception as e:
                         print(f"Error logging feedback to LangSmith: {e}")
-                        st.toast("Thanks for your feedback! We'll use it to improve.")
+                    st.toast("Thanks for your feedback! We'll use it to improve.")
             with col3:
-                if st.button("📋", key=f"copy_hist_{idx}"):
+                copy_btn = st.button("📋", key=f"copy_hist_{idx}")
+                if copy_btn:
                     st.toast("Copied to clipboard!")
 
 # Welcome message only once
