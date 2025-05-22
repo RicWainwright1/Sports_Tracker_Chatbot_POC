@@ -1136,7 +1136,7 @@ if user_input:
                     
                     /* Style the buttons to be compact and inline */
                     div[data-testid="stButton"] button {
-                        padding: 0.25rem 0.5rem !important;
+                        padding: 0.25rem 0.25rem !important;
                         font-size: 1rem !important;
                         min-height: 2rem !important;
                         width: auto !important;
