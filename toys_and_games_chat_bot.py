@@ -777,6 +777,15 @@ class SportsCommentatorBot:
         action = self.determine_action(query)
         print(f"=== ACTION RECEIVED IN GENERATE_RESPONSE: '{action}' ===")
         
+        # Get the current run ID from LangSmith
+        current_run_id = None
+        try:
+            current_run = langsmith_client.get_current_run()
+            if current_run:
+                current_run_id = current_run.id
+        except Exception as e:
+            print(f"Error getting current run ID: {e}")
+        
         insights = db_results = None
         need_more_info = False
         info_gathering_mode = False
@@ -1047,7 +1056,7 @@ class SportsCommentatorBot:
         print(f"Combined response first 100 chars: {(debug_info + reply)[:100]}")
 
         # Return both debug info and reply as a tuple
-        return (debug_info, reply)
+        return (debug_info, reply, current_run_id)
 
 # ---- STREAMLIT CHAT UI ----
 
@@ -1090,10 +1099,32 @@ for idx, msg in enumerate(st.session_state.history):
             col1, col2, col3 = st.columns([1, 1, 3])
             with col1:
                 if st.button("👍", key=f"thumbs_up_hist_{idx}"):
-                    st.toast("Thanks for your positive feedback!")
+                    try:
+                        # Log positive feedback in LangSmith
+                        langsmith_client.create_feedback(
+                            run_id=msg.get("run_id", "unknown"),
+                            key="user_feedback",
+                            score=1.0,
+                            comment="User provided positive feedback"
+                        )
+                        st.toast("Thanks for your positive feedback!")
+                    except Exception as e:
+                        print(f"Error logging feedback to LangSmith: {e}")
+                        st.toast("Thanks for your positive feedback!")
             with col2:
                 if st.button("👎", key=f"thumbs_down_hist_{idx}"):
-                    st.toast("Thanks for your feedback! We'll use it to improve.")
+                    try:
+                        # Log negative feedback in LangSmith
+                        langsmith_client.create_feedback(
+                            run_id=msg.get("run_id", "unknown"),
+                            key="user_feedback",
+                            score=0.0,
+                            comment="User provided negative feedback"
+                        )
+                        st.toast("Thanks for your feedback! We'll use it to improve.")
+                    except Exception as e:
+                        print(f"Error logging feedback to LangSmith: {e}")
+                        st.toast("Thanks for your feedback! We'll use it to improve.")
             with col3:
                 if st.button("📋", key=f"copy_hist_{idx}"):
                     st.toast("Copied to clipboard!")
@@ -1121,7 +1152,10 @@ if user_input:
     with st.chat_message("assistant", avatar="tif_shield_small.png"):
         with st.spinner("Getting the insights..."):
             # Get both debug info and reply from generate_response
-            debug_info, reply = st.session_state.bot.generate_response(user_input, st.session_state.history)
+            debug_info, reply, run_id = st.session_state.bot.generate_response(user_input, st.session_state.history)
+            
+            # Store the run_id in session state for feedback tracking
+            st.session_state.current_run_id = run_id
             
             # Display debug info followed by reply
             if st.session_state.get("show_debug", True):
@@ -1188,7 +1222,11 @@ if user_input:
                         st.code(traceback.format_exc())
     
     # Only store the actual reply in conversation history, not the debug info
-    st.session_state.history.append({"role": "assistant", "content": reply})
+    st.session_state.history.append({
+        "role": "assistant", 
+        "content": reply,
+        "run_id": run_id  # Store the run_id with the message
+    })
     
     # Process conversation history to extract information
     extract_and_print_gathered_info(st.session_state.history)
