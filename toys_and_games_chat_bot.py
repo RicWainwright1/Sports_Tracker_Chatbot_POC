@@ -1187,29 +1187,15 @@ if user_input:
     with st.chat_message("assistant", avatar="tif_shield_small.png"):
         with st.spinner("Getting the insights..."):
             # Get debug info, reply, and run_id from generate_response
-
             result = st.session_state.bot.generate_response(user_input, st.session_state.history)
             if len(result) == 3:
-                debug_info, reply, _ = result  # Ignore the run_id from generate_response
+                debug_info, reply, run_id = result  # USE run_id from generate_response
             else:
                 debug_info, reply = result
+                run_id = None
             
-            # Fetch the latest run from LangSmith for the current project
-            latest_run_id = None
-            try:
-                runs = langsmith_client.list_runs(
-                    project_name="toys-and-games-chatbot",
-                    limit=1,
-                    order_by="created_at",
-                    order="desc"
-                )
-                runs = list(runs)
-                if runs:
-                    latest_run_id = runs[0].id
-            except Exception as e:
-                print(f"Could not fetch latest run from LangSmith: {e}")
-            
-            run_id = latest_run_id
+            # Log the run_id for debugging
+            print(f"[FEEDBACK DEBUG] Using run_id for feedback: {run_id}")
             
             # Display debug info followed by reply (FIXED LOGIC)
             if st.session_state.get("show_debug", False):
@@ -1279,14 +1265,13 @@ if user_input:
                     
                     try:
                         if run_id:
-                            # Send positive feedback to LangSmith
                             feedback_result = langsmith_client.create_feedback(
                                 run_id=run_id,
                                 key="user_feedback_positive",
                                 score=1,
                                 comment="User clicked thumbs up - positive feedback"
                             )
-                            print(f"✅ SUCCESS: {feedback_result}")
+                            print(f"[FEEDBACK DEBUG] Feedback result: {feedback_result}")
                             feedback_success = True
                             st.toast("✅ Thank you for your positive feedback!", icon="👍")
                         else:
@@ -1299,7 +1284,6 @@ if user_input:
                         st.toast("❌ Feedback system error")
                         error_details = str(e)
                     
-                    # Log attempt locally regardless of success
                     st.session_state.feedback_log.append({
                         "timestamp": int(time.time()),
                         "type": "positive",
@@ -1318,14 +1302,13 @@ if user_input:
                     
                     try:
                         if run_id:
-                            # Send negative feedback to LangSmith
                             feedback_result = langsmith_client.create_feedback(
                                 run_id=run_id,
                                 key="user_feedback_negative",
                                 score=0,
                                 comment="User clicked thumbs down - negative feedback"
                             )
-                            print(f"✅ Negative feedback created: {feedback_result}")
+                            print(f"[FEEDBACK DEBUG] Feedback result: {feedback_result}")
                             feedback_success = True
                             st.toast("✅ Thank you for your feedback! We'll improve.", icon="👎")
                         else:
@@ -1335,7 +1318,6 @@ if user_input:
                         st.toast("❌ Could not record feedback")
                         error_details = str(e)
                     
-                    # Log attempt locally
                     st.session_state.feedback_log.append({
                         "timestamp": int(time.time()),
                         "type": "negative", 
