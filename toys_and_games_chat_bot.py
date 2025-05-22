@@ -1263,10 +1263,9 @@ if user_input:
             # --- FEEDBACK BUTTONS: Send feedback to LangSmith ---
             with col1:
                 if st.button("👍", key=f"up_{msg_count}_{button_timestamp}"):
-                    print(f"=== THUMBS UP PRESSED ===")
-                    print(f"Attempting feedback with run_id: {run_id} (positive)")
                     feedback_success = False
                     error_details = None
+                    feedback_message = ""
                     try:
                         if run_id:
                             feedback_result = langsmith_client.create_feedback(
@@ -1275,18 +1274,19 @@ if user_input:
                                 score=1,
                                 comment="User clicked thumbs up - positive feedback"
                             )
-                            print(f"[FEEDBACK DEBUG] Feedback result: {feedback_result}")
                             feedback_success = True
-                            st.toast("✅ Thank you for your positive feedback!", icon="👍")
+                            feedback_message = "✅ Thank you for your positive feedback!"
+                            st.toast(feedback_message, icon="👍")
+                            st.write(f"Feedback sent! Result: {feedback_result}")
                         else:
-                            print("❌ No run_id available")
-                            st.toast("⚠️ No run ID available for feedback")
+                            feedback_message = "⚠️ No run ID available for feedback"
+                            st.toast(feedback_message)
+                            st.write(feedback_message)
                     except Exception as e:
-                        print(f"❌ Critical feedback error: {e}")
-                        import traceback
-                        print(f"Traceback: {traceback.format_exc()}")
-                        st.toast("❌ Feedback system error")
                         error_details = str(e)
+                        feedback_message = f"❌ Feedback system error: {error_details}"
+                        st.toast(feedback_message)
+                        st.write(feedback_message)
                     st.session_state.feedback_log.append({
                         "timestamp": int(time.time()),
                         "type": "positive",
@@ -1297,10 +1297,9 @@ if user_input:
 
             with col2:
                 if st.button("👎", key=f"down_{msg_count}_{button_timestamp}"):
-                    print(f"=== THUMBS DOWN PRESSED ===")
-                    print(f"Attempting feedback with run_id: {run_id} (negative)")
                     feedback_success = False
                     error_details = None
+                    feedback_message = ""
                     try:
                         if run_id:
                             feedback_result = langsmith_client.create_feedback(
@@ -1309,18 +1308,19 @@ if user_input:
                                 score=0,
                                 comment="User clicked thumbs down - negative feedback"
                             )
-                            print(f"[FEEDBACK DEBUG] Feedback result: {feedback_result}")
                             feedback_success = True
-                            st.toast("✅ Thank you for your feedback! We'll improve.", icon="👎")
+                            feedback_message = "✅ Thank you for your feedback! We'll improve."
+                            st.toast(feedback_message, icon="👎")
+                            st.write(f"Feedback sent! Result: {feedback_result}")
                         else:
-                            print("❌ No run_id available")
-                            st.toast("⚠️ No run ID available for feedback")
+                            feedback_message = "⚠️ No run ID available for feedback"
+                            st.toast(feedback_message)
+                            st.write(feedback_message)
                     except Exception as e:
-                        print(f"❌ Negative feedback error: {e}")
-                        import traceback
-                        print(f"Traceback: {traceback.format_exc()}")
-                        st.toast("❌ Could not record feedback")
                         error_details = str(e)
+                        feedback_message = f"❌ Could not record feedback: {error_details}"
+                        st.toast(feedback_message)
+                        st.write(feedback_message)
                     st.session_state.feedback_log.append({
                         "timestamp": int(time.time()),
                         "type": "negative", 
