@@ -1083,7 +1083,7 @@ for idx, msg in enumerate(st.session_state.history):
                         padding: 0.2rem 0.5rem;
                         font-size: 0.8rem;
                         min-height: 1.5rem;
-                        width: 1rem;
+                        width: 2rem;
                     }
                 </style>
             """, unsafe_allow_html=True)
