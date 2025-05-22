@@ -1264,11 +1264,9 @@ if user_input:
             with col1:
                 if st.button("👍", key=f"up_{msg_count}_{button_timestamp}"):
                     print(f"=== THUMBS UP PRESSED ===")
-                    print(f"Attempting feedback with run_id: {run_id}")
-                    
+                    print(f"Attempting feedback with run_id: {run_id} (positive)")
                     feedback_success = False
                     error_details = None
-                    
                     try:
                         if run_id:
                             feedback_result = langsmith_client.create_feedback(
@@ -1289,7 +1287,6 @@ if user_input:
                         print(f"Traceback: {traceback.format_exc()}")
                         st.toast("❌ Feedback system error")
                         error_details = str(e)
-                    
                     st.session_state.feedback_log.append({
                         "timestamp": int(time.time()),
                         "type": "positive",
@@ -1301,11 +1298,9 @@ if user_input:
             with col2:
                 if st.button("👎", key=f"down_{msg_count}_{button_timestamp}"):
                     print(f"=== THUMBS DOWN PRESSED ===")
-                    print(f"Attempting feedback with run_id: {run_id}")
-                    
+                    print(f"Attempting feedback with run_id: {run_id} (negative)")
                     feedback_success = False
                     error_details = None
-                    
                     try:
                         if run_id:
                             feedback_result = langsmith_client.create_feedback(
@@ -1318,12 +1313,14 @@ if user_input:
                             feedback_success = True
                             st.toast("✅ Thank you for your feedback! We'll improve.", icon="👎")
                         else:
+                            print("❌ No run_id available")
                             st.toast("⚠️ No run ID available for feedback")
                     except Exception as e:
                         print(f"❌ Negative feedback error: {e}")
+                        import traceback
+                        print(f"Traceback: {traceback.format_exc()}")
                         st.toast("❌ Could not record feedback")
                         error_details = str(e)
-                    
                     st.session_state.feedback_log.append({
                         "timestamp": int(time.time()),
                         "type": "negative", 
