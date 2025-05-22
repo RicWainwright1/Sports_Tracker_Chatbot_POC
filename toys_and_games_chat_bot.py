@@ -37,6 +37,8 @@ os.environ["LANGCHAIN_ENDPOINT"] = st.secrets["LANGSMITH_API_URL"]
 os.environ["LANGCHAIN_API_KEY"] = st.secrets["LANGSMITH_API_KEY"]
 os.environ["LANGCHAIN_PROJECT"] = "toys-and-games-chatbot"  # Project name for organizing traces
 
+
+
 # First Streamlit command must be set_page_config - keep this at the top
 st.set_page_config(page_title="🎙️ TIF Toys & Games Expert", layout="centered")
 
@@ -218,6 +220,38 @@ def get_audio_player_simple(text, voice_id=None, speed=1.0):
         import traceback
         print(f"Traceback: {traceback.format_exc()}")
         return f"<p>Error generating audio: {str(e)}</p>"
+
+
+def test_langsmith_connection():
+    """Test LangSmith connection at startup"""
+    try:
+        print("=== TESTING LANGSMITH CONNECTION ===")
+        
+        # Test with a dummy run_id
+        test_run_id = str(uuid.uuid4())
+        print(f"Testing feedback creation with dummy run_id: {test_run_id}")
+        
+        feedback_result = langsmith_client.create_feedback(
+            run_id=test_run_id,
+            key="test_connection",
+            score=1,
+            comment="Startup connection test"
+        )
+        
+        print(f"✅ LangSmith connection successful: {feedback_result}")
+        return True
+        
+    except Exception as e:
+        print(f"❌ LangSmith connection failed: {e}")
+        import traceback
+        print(f"Full traceback: {traceback.format_exc()}")
+        return False
+    
+
+print("=== STARTUP: Testing LangSmith Connection ===")
+langsmith_connection_ok = test_langsmith_connection()
+print(f"LangSmith connection status: {'✅ OK' if langsmith_connection_ok else '❌ Failed'}")
+
 
 # Replace your get_audio_player function with this simplified version
 def get_audio_player(text, voice_id=None, speed=1.0):
@@ -1128,240 +1162,198 @@ if user_input:
                 run_id = None
             
             # Display debug info followed by reply
-            if st.session_state.get("show_debug", True):
+            if st.session_state.get("show_debug", False):
                 st.markdown(debug_info + reply)
             else:
                 st.markdown(reply)
-            # Add feedback buttons ONLY for the current response
-            st.markdown("""
-                <style>
-                    /* Remove borders and padding from button containers */
-                    div[data-testid="column"] {
-                        border: none !important;
-                        padding: 0 !important;
-                        margin: 0 !important;
-                    }
-                    
-                    /* Style the buttons to be compact and inline */
-                    div[data-testid="stButton"] button {
-                        padding: 0.25rem 0.25rem !important;
-                        font-size: 1rem !important;
-                        min-height: 2rem !important;
-                        width: auto !important;
-                        margin: 0.1rem !important;
-                        border: none !important;
-                        background: transparent !important;
-                        box-shadow: none !important;
-                    }
-                    
-                    /* Hover effects */
-                    div[data-testid="stButton"] button:hover {
-                        background: rgba(0,0,0,0.05) !important;
-                        transform: scale(1.1);
-                    }
-                    
-                    /* Remove column gaps */
-                    .row-widget.stHorizontal {
-                        gap: 0 !important;
-                    }
-                </style>
-            """, unsafe_allow_html=True)
+                st.markdown("""
+                    <style>
+                        /* Remove borders and padding from button containers */
+                        div[data-testid="column"] {
+                            border: none !important;
+                            padding: 0 !important;
+                            margin: 0 !important;
+                        }
+                        
+                        /* Style the buttons to be compact and inline */
+                        div[data-testid="stButton"] button {
+                            padding: 0.25rem 0.25rem !important;
+                            font-size: 1rem !important;
+                            min-height: 2rem !important;
+                            width: auto !important;
+                            margin: 0.1rem !important;
+                            border: none !important;
+                            background: transparent !important;
+                            box-shadow: none !important;
+                        }
+                        
+                        /* Hover effects */
+                        div[data-testid="stButton"] button:hover {
+                            background: rgba(0,0,0,0.05) !important;
+                            transform: scale(1.1);
+                        }
+                        
+                        /* Remove column gaps */
+                        .row-widget.stHorizontal {
+                            gap: 0 !important;
+                        }
+                    </style>
+                """, unsafe_allow_html=True)
 
-            # Initialize current_run_id in session state if it doesn't exist
-            if "current_run_id" not in st.session_state:
-                st.session_state.current_run_id = None
+                # Initialize feedback logging
+                if "feedback_log" not in st.session_state:
+                    st.session_state.feedback_log = []
 
-            # Update the run_id when a new response is generated
-            st.session_state.current_run_id = run_id
+                # Create unique button keys
+                button_timestamp = str(int(time.time() * 1000))
+                msg_count = len(st.session_state.history)
 
-            # Create unique button keys using timestamp and message index
-            import time
-            button_key_suffix = str(int(time.time() * 1000))  # Unique timestamp
-            message_index = len(st.session_state.history)  # Message index
+                print(f"=== CREATING FEEDBACK BUTTONS ===")
+                print(f"Message count: {msg_count}")
+                print(f"Button timestamp: {button_timestamp}")
+                print(f"Run ID: {run_id}")
 
-            print(f"=== CREATING BUTTONS WITH KEYS: msg_{message_index}_suffix_{button_key_suffix} ===")
+                # Create columns for buttons
+                col1, col2, col3, col4 = st.columns([1, 1, 1, 10])
 
-            # Create columns with minimal spacing
-            col1, col2, col3, col4 = st.columns([1, 1, 1, 10])
+                with col1:
+                    if st.button("👍", key=f"up_{msg_count}_{button_timestamp}"):
+                        print(f"=== THUMBS UP PRESSED ===")
+                        print(f"Attempting feedback with run_id: {run_id}")
+                        
+                        feedback_success = False
+                        error_details = None
+                        
+                        try:
+                            if run_id:
+                                # Multiple fallback approaches
+                                approaches = [
+                                    {"key": "user_score", "score": 1, "comment": "Positive feedback (thumbs up)"},
+                                    {"key": "thumbs_up", "score": 1.0, "comment": "User liked this response"},
+                                    {"key": "feedback", "score": 1, "comment": "Positive"},
+                                    {"key": "rating", "score": 1, "comment": "👍"}
+                                ]
+                                
+                                for i, approach in enumerate(approaches, 1):
+                                    try:
+                                        print(f"Trying approach {i}: {approach}")
+                                        
+                                        feedback_result = langsmith_client.create_feedback(
+                                            run_id=run_id,
+                                            **approach
+                                        )
+                                        
+                                        print(f"✅ Approach {i} SUCCESS: {feedback_result}")
+                                        feedback_success = True
+                                        st.toast("✅ Thank you for your positive feedback!", icon="👍")
+                                        break
+                                        
+                                    except Exception as approach_error:
+                                        print(f"❌ Approach {i} failed: {approach_error}")
+                                        error_details = str(approach_error)
+                                        continue
+                                
+                                if not feedback_success:
+                                    print("❌ All feedback approaches failed")
+                                    st.toast("⚠️ Could not record feedback to LangSmith")
+                                    
+                            else:
+                                print("❌ No run_id available")
+                                st.toast("⚠️ No run ID available for feedback")
+                                
+                        except Exception as e:
+                            print(f"❌ Critical feedback error: {e}")
+                            import traceback
+                            print(f"Traceback: {traceback.format_exc()}")
+                            st.toast("❌ Feedback system error")
+                        
+                        # Log attempt locally regardless of success
+                        st.session_state.feedback_log.append({
+                            "timestamp": int(time.time()),
+                            "type": "positive",
+                            "run_id": run_id[:8] + "..." if run_id else "None",
+                            "success": feedback_success,
+                            "error": error_details
+                        })
 
-            with col1:
-                # Use unique key that won't conflict
-                current_thumbs_up = st.button("👍", key=f"thumbs_up_{message_index}_{button_key_suffix}")
-                if current_thumbs_up:
-                    print(f"=== THUMBS UP CLICKED ===")
-                    print(f"Using run_id: {run_id}")
-                    try:
-                        # Use the run_id from the current response
-                        if run_id:
-                            print(f"Attempting to create positive feedback for run_id: {run_id}")
-                            
-                            # Try different approaches to create feedback
-                            feedback_result = None
-                            
-                            # Approach 1: Basic feedback
-                            try:
+                with col2:
+                    if st.button("👎", key=f"down_{msg_count}_{button_timestamp}"):
+                        print(f"=== THUMBS DOWN PRESSED ===")
+                        print(f"Attempting feedback with run_id: {run_id}")
+                        
+                        feedback_success = False
+                        
+                        try:
+                            if run_id:
                                 feedback_result = langsmith_client.create_feedback(
                                     run_id=run_id,
                                     key="user_score",
-                                    score=1,
-                                    comment="User provided positive feedback (thumbs up)"
+                                    score=0,
+                                    comment="Negative feedback (thumbs down)"
                                 )
-                                print(f"✅ Method 1 - Positive feedback created: {feedback_result}")
-                            except Exception as e1:
-                                print(f"❌ Method 1 failed: {e1}")
                                 
-                                # Approach 2: Try with different key
-                                try:
-                                    feedback_result = langsmith_client.create_feedback(
-                                        run_id=run_id,
-                                        key="thumbs_up",
-                                        score=1.0,
-                                        comment="Positive feedback"
-                                    )
-                                    print(f"✅ Method 2 - Positive feedback created: {feedback_result}")
-                                except Exception as e2:
-                                    print(f"❌ Method 2 failed: {e2}")
-                                    
-                                    # Approach 3: Try with minimal parameters
-                                    try:
-                                        feedback_result = langsmith_client.create_feedback(
-                                            run_id=run_id,
-                                            key="feedback",
-                                            score=1
-                                        )
-                                        print(f"✅ Method 3 - Positive feedback created: {feedback_result}")
-                                    except Exception as e3:
-                                        print(f"❌ Method 3 failed: {e3}")
-                                        raise e3
-                            
-                            if feedback_result:
-                                print(f"✅ Final result - Positive feedback logged for run_id: {run_id}")
-                                print(f"Feedback details: {feedback_result}")
-                                st.toast("✅ Thanks for your positive feedback!", icon="👍")
+                                print(f"✅ Negative feedback created: {feedback_result}")
+                                feedback_success = True
+                                st.toast("✅ Thank you for your feedback! We'll improve.", icon="👎")
+                                
                             else:
-                                st.toast("⚠️ Feedback recorded locally but not synced")
+                                st.toast("⚠️ No run ID available for feedback")
                                 
+                        except Exception as e:
+                            print(f"❌ Negative feedback error: {e}")
+                            st.toast("❌ Could not record feedback")
+                        
+                        # Log attempt locally
+                        st.session_state.feedback_log.append({
+                            "timestamp": int(time.time()),
+                            "type": "negative", 
+                            "run_id": run_id[:8] + "..." if run_id else "None",
+                            "success": feedback_success,
+                            "error": str(e) if not feedback_success else None
+                        })
+
+                with col3:
+                    if st.button("📋", key=f"copy_{msg_count}_{button_timestamp}"):
+                        st.toast("📋 Response copied!", icon="📋")
+
+                # ===== UPDATE YOUR SIDEBAR DEBUG SECTION =====
+                # Add this to your sidebar (inside the existing sidebar section):
+
+                if st.session_state.get("show_debug", False):
+                    with st.sidebar:
+                        st.divider()
+                        st.subheader("🔧 Debug Info")
+                        
+                        # LangSmith connection status
+                        connection_status = "✅ Connected" if langsmith_connection_ok else "❌ Failed"
+                        st.write(f"**LangSmith:** {connection_status}")
+                        
+                        # Current run ID
+                        if "current_run_id" in st.session_state and st.session_state.current_run_id:
+                            st.write(f"**Current Run:** {st.session_state.current_run_id[:8]}...")
                         else:
-                            print("⚠️ No run_id available for feedback")
-                            st.toast("⚠️ No run ID available for feedback")
-                            
-                    except Exception as e:
-                        print(f"❌ Error logging positive feedback to LangSmith: {e}")
-                        import traceback
-                        print(f"Full traceback: {traceback.format_exc()}")
-                        st.toast("❌ Error recording feedback")
-
-            with col2:
-                current_thumbs_down = st.button("👎", key=f"thumbs_down_{message_index}_{button_key_suffix}")
-                if current_thumbs_down:
-                    print(f"=== THUMBS DOWN CLICKED ===")
-                    print(f"Using run_id: {run_id}")
-                    try:
-                        if run_id:
-                            print(f"Attempting to create negative feedback for run_id: {run_id}")
-                            
-                            feedback_result = langsmith_client.create_feedback(
-                                run_id=run_id,
-                                key="user_score",
-                                score=0,
-                                comment="User provided negative feedback (thumbs down)"
-                            )
-                            print(f"✅ Negative feedback logged for run_id: {run_id}")
-                            print(f"Feedback details: {feedback_result}")
-                            st.toast("✅ Thanks for your feedback! We'll use it to improve.", icon="👎")
+                            st.write("**Current Run:** None")
+                        
+                        # Recent feedback attempts
+                        if hasattr(st.session_state, 'feedback_log') and st.session_state.feedback_log:
+                            st.write("**Recent Feedback:**")
+                            for feedback in st.session_state.feedback_log[-3:]:
+                                success_icon = "✅" if feedback["success"] else "❌"
+                                st.write(f"{success_icon} {feedback['type']} - {feedback['run_id']}")
+                                if feedback.get("error"):
+                                    st.caption(f"Error: {feedback['error'][:50]}...")
                         else:
-                            print("⚠️ No run_id available for feedback")
-                            st.toast("⚠️ No run ID available for feedback")
-                    except Exception as e:
-                        print(f"❌ Error logging negative feedback to LangSmith: {e}")
-                        import traceback
-                        print(f"Full traceback: {traceback.format_exc()}")
-                        st.toast("❌ Error recording feedback")
+                            st.write("**Recent Feedback:** None")
+                        
+                        # Test button
+                        if st.button("Test LangSmith", key="test_langsmith"):
+                            test_result = test_langsmith_connection()
+                            if test_result:
+                                st.success("LangSmith test passed!")
+                            else:
+                                st.error("LangSmith test failed!")
 
-            with col3:
-                current_copy_btn = st.button("📋", key=f"copy_{message_index}_{button_key_suffix}")
-                if current_copy_btn:
-                    st.toast("📋 Copied to clipboard!")
-
-            # Add debugging section to track feedback attempts
-            if "feedback_log" not in st.session_state:
-                st.session_state.feedback_log = []
-
-            # Add to your sidebar debugging section (optional):
-            if st.session_state.get("show_debug", False):
-                with st.sidebar:
-                    st.subheader("Feedback Debug")
-                    if hasattr(st.session_state, 'feedback_log') and st.session_state.feedback_log:
-                        st.write("Recent feedback attempts:")
-                        for feedback in st.session_state.feedback_log[-3:]:  # Show last 3
-                            st.write(f"• {feedback}")
-                    else:
-                        st.write("No feedback attempts yet")
                     
-                    # Show current run_id for debugging
-                    if run_id:
-                        st.write(f"Current run_id: {run_id[:8]}...")
-                    else:
-                        st.write("No run_id available")
-                            
-            # Auto-generate audio if enabled
-            if st.session_state.get("auto_audio", False):
-                try:
-                    with st.spinner("Generating audio..."):
-                        # Get clean text for speech (remove markdown)
-                        speech_text = reply.replace('**', '').replace('#', '').strip()
-                        
-                        # Get voice settings from session state
-                        voice_id = st.session_state.get("voice_id", "JBFqnCBsd6RMkjVDRZzb")
-                        
-                        # Get ElevenLabs API key - FIXED to use st.secrets
-                        elevenlabs_api_key = st.secrets["ELEVEN_API_KEY"]
-                        if not elevenlabs_api_key:
-                            st.error("ElevenLabs API key not found. Please add it to your environment.")
-                        else:
-                            # Create the ElevenLabs client
-                            client = ElevenLabs(api_key=elevenlabs_api_key)
-                            
-                            # Generate audio
-                            audio_generator = client.text_to_speech.convert(
-                                text=speech_text,
-                                voice_id=voice_id,
-                                model_id="eleven_multilingual_v2",
-                                output_format="mp3_44100_128"
-                            )
-                            
-                            # Handle different return types
-                            if hasattr(audio_generator, 'read'):
-                                # File-like object
-                                audio_bytes = audio_generator.read()
-                            elif hasattr(audio_generator, '__iter__'):
-                                # Generator
-                                buffer = io.BytesIO()
-                                for chunk in audio_generator:
-                                    buffer.write(chunk)
-                                buffer.seek(0)
-                                audio_bytes = buffer.read()
-                            else:
-                                # Bytes
-                                audio_bytes = audio_generator
-                            
-                            # Save to a temporary file
-                            temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.mp3')
-                            temp_filename = temp_file.name
-                            temp_file.close()
-                            
-                            with open(temp_filename, 'wb') as f:
-                                f.write(audio_bytes)
-                            
-                            # Display the audio player
-                            st.audio(temp_filename, format="audio/mp3")
-                            
-                except Exception as e:
-                    st.error(f"Error generating audio: {str(e)}")
-                    if st.session_state.get("show_debug", False):
-                        import traceback
-                        st.code(traceback.format_exc())
-    
     # Store the actual reply in conversation history with run_id
     st.session_state.history.append({
         "role": "assistant", 
