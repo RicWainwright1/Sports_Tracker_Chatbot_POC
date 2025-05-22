@@ -1276,17 +1276,15 @@ if user_input:
                             )
                             feedback_success = True
                             feedback_message = "✅ Thank you for your positive feedback!"
-                            st.toast(feedback_message, icon="👍")
-                            st.write(f"Feedback sent! Result: {feedback_result}")
+                            st.session_state.feedback_ui_message = feedback_message
+                            st.session_state.feedback_ui_result = str(feedback_result)
                         else:
                             feedback_message = "⚠️ No run ID available for feedback"
-                            st.toast(feedback_message)
-                            st.write(feedback_message)
+                            st.session_state.feedback_ui_message = feedback_message
                     except Exception as e:
                         error_details = str(e)
                         feedback_message = f"❌ Feedback system error: {error_details}"
-                        st.toast(feedback_message)
-                        st.write(feedback_message)
+                        st.session_state.feedback_ui_message = feedback_message
                     st.session_state.feedback_log.append({
                         "timestamp": int(time.time()),
                         "type": "positive",
@@ -1310,17 +1308,15 @@ if user_input:
                             )
                             feedback_success = True
                             feedback_message = "✅ Thank you for your feedback! We'll improve."
-                            st.toast(feedback_message, icon="👎")
-                            st.write(f"Feedback sent! Result: {feedback_result}")
+                            st.session_state.feedback_ui_message = feedback_message
+                            st.session_state.feedback_ui_result = str(feedback_result)
                         else:
                             feedback_message = "⚠️ No run ID available for feedback"
-                            st.toast(feedback_message)
-                            st.write(feedback_message)
+                            st.session_state.feedback_ui_message = feedback_message
                     except Exception as e:
                         error_details = str(e)
                         feedback_message = f"❌ Could not record feedback: {error_details}"
-                        st.toast(feedback_message)
-                        st.write(feedback_message)
+                        st.session_state.feedback_ui_message = feedback_message
                     st.session_state.feedback_log.append({
                         "timestamp": int(time.time()),
                         "type": "negative", 
@@ -1342,3 +1338,14 @@ if user_input:
     
     # Process conversation history to extract information
     extract_and_print_gathered_info(st.session_state.history)
+
+# Show feedback message in UI if present
+if st.session_state.get("feedback_ui_message"):
+    st.toast(st.session_state.feedback_ui_message)
+    st.write(st.session_state.feedback_ui_message)
+    if st.session_state.get("feedback_ui_result"):
+        st.write(f"Feedback sent! Result: {st.session_state.feedback_ui_result}")
+    # Clear after showing
+    del st.session_state["feedback_ui_message"]
+    if "feedback_ui_result" in st.session_state:
+        del st.session_state["feedback_ui_result"]
