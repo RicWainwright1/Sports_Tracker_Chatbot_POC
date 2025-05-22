@@ -1253,6 +1253,7 @@ if user_input:
             # Create columns for buttons
             col1, col2, col3, col4 = st.columns([1, 1, 1, 10])
 
+            # --- FEEDBACK BUTTONS: Send feedback to LangSmith ---
             with col1:
                 if st.button("👍", key=f"up_{msg_count}_{button_timestamp}"):
                     print(f"=== THUMBS UP PRESSED ===")
@@ -1263,22 +1264,19 @@ if user_input:
                     
                     try:
                         if run_id:
-                            # Use the exact same format as your working test
+                            # Send positive feedback to LangSmith
                             feedback_result = langsmith_client.create_feedback(
                                 run_id=run_id,
                                 key="user_feedback_positive",
                                 score=1,
                                 comment="User clicked thumbs up - positive feedback"
                             )
-                            
                             print(f"✅ SUCCESS: {feedback_result}")
                             feedback_success = True
                             st.toast("✅ Thank you for your positive feedback!", icon="👍")
-                            
                         else:
                             print("❌ No run_id available")
                             st.toast("⚠️ No run ID available for feedback")
-                            
                     except Exception as e:
                         print(f"❌ Critical feedback error: {e}")
                         import traceback
@@ -1305,20 +1303,18 @@ if user_input:
                     
                     try:
                         if run_id:
+                            # Send negative feedback to LangSmith
                             feedback_result = langsmith_client.create_feedback(
                                 run_id=run_id,
                                 key="user_feedback_negative",
                                 score=0,
                                 comment="User clicked thumbs down - negative feedback"
                             )
-                            
                             print(f"✅ Negative feedback created: {feedback_result}")
                             feedback_success = True
                             st.toast("✅ Thank you for your feedback! We'll improve.", icon="👎")
-                            
                         else:
                             st.toast("⚠️ No run ID available for feedback")
-                            
                     except Exception as e:
                         print(f"❌ Negative feedback error: {e}")
                         st.toast("❌ Could not record feedback")
