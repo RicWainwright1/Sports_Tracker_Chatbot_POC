@@ -63,8 +63,14 @@ def test_langsmith_connection():
         return False
     
 
-print("=== STARTUP: Testing LangSmith Connection ===")
-langsmith_connection_ok = test_langsmith_connection()
+# Only test LangSmith connection once per session
+if "langsmith_connection_tested" not in st.session_state:
+    print("=== STARTUP: Testing LangSmith Connection ===")
+    langsmith_connection_ok = test_langsmith_connection()
+    st.session_state.langsmith_connection_ok = langsmith_connection_ok
+    st.session_state.langsmith_connection_tested = True
+else:
+    langsmith_connection_ok = st.session_state.langsmith_connection_ok
 print(f"LangSmith connection status: {'✅ OK' if langsmith_connection_ok else '❌ Failed'}")
 
 
