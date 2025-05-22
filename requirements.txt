@@ -6,3 +6,4 @@ pinecone
 anthropic
 langchain-community
 elevenlabs
+langsmith
