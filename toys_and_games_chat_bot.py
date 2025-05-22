@@ -10,7 +10,7 @@ from typing import List, Dict, Any
 from pinecone import Pinecone, ServerlessSpec
 import anthropic
 from langsmith import Client
-from langsmith.run_helpers import traceable
+from langsmith.run_helpers import traceable, get_current_run_tree
 
 from langchain_community.embeddings import OpenAIEmbeddings
 from langchain_community.vectorstores import Pinecone
@@ -780,11 +780,12 @@ class SportsCommentatorBot:
         # Get the current run ID from LangSmith
         current_run_id = None
         try:
-            current_run = langsmith_client.get_current_run()
-            if current_run:
-                current_run_id = current_run.id
+            run_tree = get_current_run_tree()
+            if run_tree:
+                current_run_id = str(run_tree.id)
+                print(f"✅ Captured run_id: {current_run_id}")
         except Exception as e:
-            print(f"Error getting current run ID: {e}")
+            print(f"⚠️ Could not get run ID: {e}")
         
         insights = db_results = None
         need_more_info = False
