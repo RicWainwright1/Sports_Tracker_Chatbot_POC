@@ -1187,14 +1187,29 @@ if user_input:
     with st.chat_message("assistant", avatar="tif_shield_small.png"):
         with st.spinner("Getting the insights..."):
             # Get debug info, reply, and run_id from generate_response
+
             result = st.session_state.bot.generate_response(user_input, st.session_state.history)
-            
-            # Handle the tuple unpacking correctly
             if len(result) == 3:
-                debug_info, reply, run_id = result
+                debug_info, reply, _ = result  # Ignore the run_id from generate_response
             else:
                 debug_info, reply = result
-                run_id = None
+            
+            # Fetch the latest run from LangSmith for the current project
+            latest_run_id = None
+            try:
+                runs = langsmith_client.list_runs(
+                    project_name="toys-and-games-chatbot",
+                    limit=1,
+                    order_by="created_at",
+                    order="desc"
+                )
+                runs = list(runs)
+                if runs:
+                    latest_run_id = runs[0].id
+            except Exception as e:
+                print(f"Could not fetch latest run from LangSmith: {e}")
+            
+            run_id = latest_run_id
             
             # Display debug info followed by reply (FIXED LOGIC)
             if st.session_state.get("show_debug", False):
