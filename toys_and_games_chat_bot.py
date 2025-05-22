@@ -696,26 +696,22 @@ class SportsCommentatorBot:
                 import anthropic
                 client = anthropic.Anthropic(api_key=st.secrets["ANTHROPIC_API_KEY"])
                 
-                # Call Claude API with tracing
-                with langsmith_client.trace("claude_api_call") as tracer:
-                    response = client.messages.create(
-                        model="claude-3-7-sonnet-20240620",
-                        max_tokens=100,
-                        messages=messages
-                    )
-                    tracer.add_output({"response": response.content[0].text})
+                # Call Claude API
+                response = client.messages.create(
+                    model="claude-3-7-sonnet-20240620",
+                    max_tokens=100,
+                    messages=messages
+                )
                 
                 action = response.content[0].text.strip().lower()
             except Exception as e:
                 print(f"Error calling Claude API: {e}")
                 # Fallback to OpenAI if Claude fails
-                with langsmith_client.trace("openai_fallback") as tracer:
-                    completion = openai.chat.completions.create(
-                        model="gpt-3.5-turbo",
-                        messages=messages,
-                        temperature=1
-                    )
-                    tracer.add_output({"response": completion.choices[0].message.content})
+                completion = openai.chat.completions.create(
+                    model="gpt-3.5-turbo",
+                    messages=messages,
+                    temperature=1
+                )
                 action = completion.choices[0].message.content.strip().lower()
         elif self.model == "grok-3-latest":
             try:
@@ -742,35 +738,29 @@ class SportsCommentatorBot:
                     "temperature": 1
                 }
                 
-                # Make the API call with tracing
-                with langsmith_client.trace("grok_api_call") as tracer:
-                    response = requests.post(url, headers=headers, data=json.dumps(payload))
-                    response.raise_for_status()
-                    result = response.json()
-                    tracer.add_output({"response": result})
+                # Make the API call
+                response = requests.post(url, headers=headers, data=json.dumps(payload))
+                response.raise_for_status()
+                result = response.json()
                 
                 action = result["choices"][0]["message"]["content"].strip().lower()
                 
             except Exception as e:
                 print(f"Error calling X.AI API: {e}")
                 # Fallback to OpenAI if X.AI fails
-                with langsmith_client.trace("openai_fallback") as tracer:
-                    completion = openai.chat.completions.create(
-                        model="gpt-3.5-turbo",
-                        messages=messages,
-                        temperature=1
-                    )
-                    tracer.add_output({"response": completion.choices[0].message.content})
-                action = completion.choices[0].message.content.strip().lower()
-        else:
-            # Use OpenAI for other models with tracing
-            with langsmith_client.trace("openai_api_call") as tracer:
                 completion = openai.chat.completions.create(
-                    model=self.model,
+                    model="gpt-3.5-turbo",
                     messages=messages,
                     temperature=1
                 )
-                tracer.add_output({"response": completion.choices[0].message.content})
+                action = completion.choices[0].message.content.strip().lower()
+        else:
+            # Use OpenAI for other models
+            completion = openai.chat.completions.create(
+                model=self.model,
+                messages=messages,
+                temperature=1
+            )
             action = completion.choices[0].message.content.strip().lower()
             
         final_action = action if action in ["search_vector_db", "query_database", "request_more_info"] else "request_more_info"
@@ -814,9 +804,7 @@ class SportsCommentatorBot:
         
         if action == "search_vector_db":
             print("=== EXECUTING VECTOR DB SEARCH ===")
-            with langsmith_client.trace("vector_db_search") as tracer:
-                insights = self.vector_db.search(query)
-                tracer.add_output({"insights": insights})
+            insights = self.vector_db.search(query)
             debug_info += f"**Vector DB Search Results:**\n"
             if insights:
                 for i, insight in enumerate(insights):
@@ -826,9 +814,7 @@ class SportsCommentatorBot:
                 info_gathering_mode = True
         elif action == "query_database":
             print("=== EXECUTING DATABASE QUERY ===")
-            with langsmith_client.trace("database_query") as tracer:
-                db_results = self.db_connector.query(query)
-                tracer.add_output({"results": db_results})
+            db_results = self.db_connector.query(query)
             debug_info += f"**Database Query Results:**\n"
             if db_results:
                 for k, v in db_results.items():
@@ -970,26 +956,22 @@ class SportsCommentatorBot:
                     elif msg["role"] == "assistant":
                         claude_messages.append({"role": "assistant", "content": msg["content"]})
                 
-                # Call Claude API with tracing
-                with langsmith_client.trace("claude_api_call") as tracer:
-                    response = client.messages.create(
-                        model="claude-3-7-sonnet-20240620",
-                        max_tokens=1000,
-                        messages=claude_messages
-                    )
-                    tracer.add_output({"response": response.content[0].text})
+                # Call Claude API
+                response = client.messages.create(
+                    model="claude-3-7-sonnet-20240620",
+                    max_tokens=1000,
+                    messages=claude_messages
+                )
                 
                 reply = response.content[0].text
             except Exception as e:
                 print(f"Error calling Claude API: {e}")
                 # Fallback to OpenAI if Claude fails
-                with langsmith_client.trace("openai_fallback") as tracer:
-                    completion = openai.chat.completions.create(
-                        model="gpt-3.5-turbo",
-                        messages=messages,
-                        temperature=1
-                    )
-                    tracer.add_output({"response": completion.choices[0].message.content})
+                completion = openai.chat.completions.create(
+                    model="gpt-3.5-turbo",
+                    messages=messages,
+                    temperature=1
+                )
                 reply = completion.choices[0].message.content
         elif self.model == "grok-3-latest":
             try:
@@ -1024,35 +1006,29 @@ class SportsCommentatorBot:
                     "temperature": 1
                 }
                 
-                # Make the API call with tracing
-                with langsmith_client.trace("grok_api_call") as tracer:
-                    response = requests.post(url, headers=headers, data=json.dumps(payload))
-                    response.raise_for_status()
-                    result = response.json()
-                    tracer.add_output({"response": result})
+                # Make the API call
+                response = requests.post(url, headers=headers, data=json.dumps(payload))
+                response.raise_for_status()
+                result = response.json()
                 
                 reply = result["choices"][0]["message"]["content"]
                 
             except Exception as e:
                 print(f"Error calling X.AI API: {e}")
                 # Fallback to OpenAI if X.AI fails
-                with langsmith_client.trace("openai_fallback") as tracer:
-                    completion = openai.chat.completions.create(
-                        model="gpt-3.5-turbo",
-                        messages=messages,
-                        temperature=1
-                    )
-                    tracer.add_output({"response": completion.choices[0].message.content})
-                reply = completion.choices[0].message.content
-        else:
-            # Use OpenAI for other models with tracing
-            with langsmith_client.trace("openai_api_call") as tracer:
                 completion = openai.chat.completions.create(
-                    model=self.model,
+                    model="gpt-3.5-turbo",
                     messages=messages,
                     temperature=1
                 )
-                tracer.add_output({"response": completion.choices[0].message.content})
+                reply = completion.choices[0].message.content
+        else:
+            # Use OpenAI for other models
+            completion = openai.chat.completions.create(
+                model=self.model,
+                messages=messages,
+                temperature=1
+            )
             reply = completion.choices[0].message.content
 
         print(f"=== LLM RESPONSE GENERATED ===")
