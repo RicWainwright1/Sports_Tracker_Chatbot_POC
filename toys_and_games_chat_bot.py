@@ -10,7 +10,7 @@ from typing import List, Dict, Any
 from pinecone import Pinecone, ServerlessSpec
 import anthropic
 from langsmith import Client
-from langsmith.run_helpers import traceable
+from langsmith.run_helpers import traceable, trace
 
 from langchain_community.embeddings import OpenAIEmbeddings
 from langchain_community.vectorstores import Pinecone
@@ -697,21 +697,25 @@ class SportsCommentatorBot:
                 client = anthropic.Anthropic(api_key=st.secrets["ANTHROPIC_API_KEY"])
                 
                 # Call Claude API
-                response = client.messages.create(
-                    model="claude-3-7-sonnet-20240620",
-                    max_tokens=100,
-                    messages=messages
-                )
+                with trace("claude_api_call") as tracer:
+                    response = client.messages.create(
+                        model="claude-3-7-sonnet-20240620",
+                        max_tokens=100,
+                        messages=messages
+                    )
+                    tracer.add_output({"response": response.content[0].text})
                 
                 action = response.content[0].text.strip().lower()
             except Exception as e:
                 print(f"Error calling Claude API: {e}")
                 # Fallback to OpenAI if Claude fails
-                completion = openai.chat.completions.create(
-                    model="gpt-3.5-turbo",
-                    messages=messages,
-                    temperature=1
-                )
+                with trace("openai_fallback") as tracer:
+                    completion = openai.chat.completions.create(
+                        model="gpt-3.5-turbo",
+                        messages=messages,
+                        temperature=1
+                    )
+                    tracer.add_output({"response": completion.choices[0].message.content})
                 action = completion.choices[0].message.content.strip().lower()
         elif self.model == "grok-3-latest":
             try:
@@ -739,28 +743,34 @@ class SportsCommentatorBot:
                 }
                 
                 # Make the API call
-                response = requests.post(url, headers=headers, data=json.dumps(payload))
-                response.raise_for_status()
-                result = response.json()
+                with trace("grok_api_call") as tracer:
+                    response = requests.post(url, headers=headers, data=json.dumps(payload))
+                    response.raise_for_status()
+                    result = response.json()
+                    tracer.add_output({"response": result})
                 
                 action = result["choices"][0]["message"]["content"].strip().lower()
                 
             except Exception as e:
                 print(f"Error calling X.AI API: {e}")
                 # Fallback to OpenAI if X.AI fails
-                completion = openai.chat.completions.create(
-                    model="gpt-3.5-turbo",
-                    messages=messages,
-                    temperature=1
-                )
+                with trace("openai_fallback") as tracer:
+                    completion = openai.chat.completions.create(
+                        model="gpt-3.5-turbo",
+                        messages=messages,
+                        temperature=1
+                    )
+                    tracer.add_output({"response": completion.choices[0].message.content})
                 action = completion.choices[0].message.content.strip().lower()
         else:
             # Use OpenAI for other models
-            completion = openai.chat.completions.create(
-                model=self.model,
-                messages=messages,
-                temperature=1
-            )
+            with trace("openai_api_call") as tracer:
+                completion = openai.chat.completions.create(
+                    model=self.model,
+                    messages=messages,
+                    temperature=1
+                )
+                tracer.add_output({"response": completion.choices[0].message.content})
             action = completion.choices[0].message.content.strip().lower()
             
         final_action = action if action in ["search_vector_db", "query_database", "request_more_info"] else "request_more_info"
@@ -804,7 +814,9 @@ class SportsCommentatorBot:
         
         if action == "search_vector_db":
             print("=== EXECUTING VECTOR DB SEARCH ===")
-            insights = self.vector_db.search(query)
+            with trace("vector_db_search") as tracer:
+                insights = self.vector_db.search(query)
+                tracer.add_output({"insights": insights})
             debug_info += f"**Vector DB Search Results:**\n"
             if insights:
                 for i, insight in enumerate(insights):
@@ -814,7 +826,9 @@ class SportsCommentatorBot:
                 info_gathering_mode = True
         elif action == "query_database":
             print("=== EXECUTING DATABASE QUERY ===")
-            db_results = self.db_connector.query(query)
+            with trace("database_query") as tracer:
+                db_results = self.db_connector.query(query)
+                tracer.add_output({"results": db_results})
             debug_info += f"**Database Query Results:**\n"
             if db_results:
                 for k, v in db_results.items():
@@ -957,21 +971,25 @@ class SportsCommentatorBot:
                         claude_messages.append({"role": "assistant", "content": msg["content"]})
                 
                 # Call Claude API
-                response = client.messages.create(
-                    model="claude-3-7-sonnet-20240620",
-                    max_tokens=1000,
-                    messages=claude_messages
-                )
+                with trace("claude_api_call") as tracer:
+                    response = client.messages.create(
+                        model="claude-3-7-sonnet-20240620",
+                        max_tokens=1000,
+                        messages=claude_messages
+                    )
+                    tracer.add_output({"response": response.content[0].text})
                 
                 reply = response.content[0].text
             except Exception as e:
                 print(f"Error calling Claude API: {e}")
                 # Fallback to OpenAI if Claude fails
-                completion = openai.chat.completions.create(
-                    model="gpt-3.5-turbo",
-                    messages=messages,
-                    temperature=1
-                )
+                with trace("openai_fallback") as tracer:
+                    completion = openai.chat.completions.create(
+                        model="gpt-3.5-turbo",
+                        messages=messages,
+                        temperature=1
+                    )
+                    tracer.add_output({"response": completion.choices[0].message.content})
                 reply = completion.choices[0].message.content
         elif self.model == "grok-3-latest":
             try:
@@ -1007,28 +1025,34 @@ class SportsCommentatorBot:
                 }
                 
                 # Make the API call
-                response = requests.post(url, headers=headers, data=json.dumps(payload))
-                response.raise_for_status()
-                result = response.json()
+                with trace("grok_api_call") as tracer:
+                    response = requests.post(url, headers=headers, data=json.dumps(payload))
+                    response.raise_for_status()
+                    result = response.json()
+                    tracer.add_output({"response": result})
                 
                 reply = result["choices"][0]["message"]["content"]
                 
             except Exception as e:
                 print(f"Error calling X.AI API: {e}")
                 # Fallback to OpenAI if X.AI fails
-                completion = openai.chat.completions.create(
-                    model="gpt-3.5-turbo",
-                    messages=messages,
-                    temperature=1
-                )
+                with trace("openai_fallback") as tracer:
+                    completion = openai.chat.completions.create(
+                        model="gpt-3.5-turbo",
+                        messages=messages,
+                        temperature=1
+                    )
+                    tracer.add_output({"response": completion.choices[0].message.content})
                 reply = completion.choices[0].message.content
         else:
             # Use OpenAI for other models
-            completion = openai.chat.completions.create(
-                model=self.model,
-                messages=messages,
-                temperature=1
-            )
+            with trace("openai_api_call") as tracer:
+                completion = openai.chat.completions.create(
+                    model=self.model,
+                    messages=messages,
+                    temperature=1
+                )
+                tracer.add_output({"response": completion.choices[0].message.content})
             reply = completion.choices[0].message.content
 
         print(f"=== LLM RESPONSE GENERATED ===")
