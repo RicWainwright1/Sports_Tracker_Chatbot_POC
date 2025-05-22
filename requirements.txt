@@ -7,3 +7,4 @@ anthropic
 langchain-community
 elevenlabs
 langsmith
+tiktoken
