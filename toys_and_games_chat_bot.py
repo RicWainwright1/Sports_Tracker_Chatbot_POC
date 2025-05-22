@@ -1076,7 +1076,17 @@ for msg in st.session_state.history:
     else:  # assistant message
         with st.chat_message("assistant", avatar="tif_shield_small.png"): 
             st.markdown(msg["content"])
-            # Add feedback buttons and copy button in a row
+            # Add feedback buttons and copy button in a row with custom styling
+            st.markdown("""
+                <style>
+                    div[data-testid="stButton"] button {
+                        padding: 0.2rem 0.5rem;
+                        font-size: 0.8rem;
+                        min-height: 1.5rem;
+                        width: 2rem;
+                    }
+                </style>
+            """, unsafe_allow_html=True)
             col1, col2, col3 = st.columns([1, 1, 3])
             with col1:
                 if st.button("👍", key=f"thumbs_up_{len(st.session_state.history)}"):
@@ -1085,7 +1095,7 @@ for msg in st.session_state.history:
                 if st.button("👎", key=f"thumbs_down_{len(st.session_state.history)}"):
                     st.toast("Thanks for your feedback! We'll use it to improve.")
             with col3:
-                if st.button("📋 Copy", key=f"copy_{len(st.session_state.history)}"):
+                if st.button("📋", key=f"copy_{len(st.session_state.history)}"):
                     # Get the text to copy (either debug info + reply or just reply)
                     text_to_copy = debug_info + reply if st.session_state.get("show_debug", True) else reply
                     # Use JavaScript to copy to clipboard
