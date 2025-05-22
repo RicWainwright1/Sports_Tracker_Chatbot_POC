@@ -10,7 +10,8 @@ from typing import List, Dict, Any
 from pinecone import Pinecone, ServerlessSpec
 import anthropic
 from langsmith import Client
-from langsmith.run_helpers import traceable, get_current_run_tree
+from langsmith import traceable
+from langsmith.run_helpers import get_current_run_tree
 
 from langchain_community.embeddings import OpenAIEmbeddings
 from langchain_community.vectorstores import Pinecone
@@ -772,6 +773,21 @@ class SportsCommentatorBot:
 
     @traceable(run_type="chain", name="generate_response")
     def generate_response(self, query: str, conversation_history: List[Dict[str, str]]) -> tuple:
+        # Get the current run ID from LangSmith PROPERLY
+        current_run_id = None
+        try:
+            run_tree = get_current_run_tree()
+            if run_tree and hasattr(run_tree, 'id'):
+                current_run_id = str(run_tree.id)
+                print(f"✅ Captured run_id: {current_run_id}")
+            else:
+                print("⚠️ No run tree found or no ID attribute")
+        except Exception as e:
+            print(f"⚠️ Could not get run ID: {e}")
+            # Generate a UUID as fallback for feedback tracking
+            current_run_id = str(uuid.uuid4())
+            print(f"✅ Generated fallback run_id: {current_run_id}")
+        
         # Call determine_action and log the result
         print("\n=== GENERATE RESPONSE STARTING ===")
         action = self.determine_action(query)
@@ -1059,6 +1075,8 @@ class SportsCommentatorBot:
         # Return both debug info and reply as a tuple
         return (debug_info, reply, current_run_id)
 
+
+
 # ---- STREAMLIT CHAT UI ----
 
 # Update the bot if model changes and bot exists
@@ -1159,23 +1177,23 @@ if user_input:
                     }
                 </style>
             """, unsafe_allow_html=True)
-            
+
             # Create columns with minimal spacing
             col1, col2, col3, col4 = st.columns([1, 1, 1, 10])
-            
+
             with col1:
                 current_thumbs_up = st.button("👍", key=f"current_thumbs_up")
                 if current_thumbs_up:
                     try:
-                        # Log positive feedback in LangSmith
+                        # CORRECT way to log positive feedback in LangSmith
                         if run_id:
-                            langsmith_client.create_feedback(
+                            feedback_id = langsmith_client.create_feedback(
                                 run_id=run_id,
-                                key="user_feedback",
-                                score=1.0,
-                                comment="User provided positive feedback"
+                                key="user_score",  # Use "user_score" as the key
+                                score=1,  # Use integer 1 instead of 1.0
+                                comment="User provided positive feedback (thumbs up)"
                             )
-                            print(f"✅ Positive feedback logged for run_id: {run_id}")
+                            print(f"✅ Positive feedback logged for run_id: {run_id}, feedback_id: {feedback_id}")
                         else:
                             print("⚠️ No run_id available for feedback")
                     except Exception as e:
@@ -1183,20 +1201,20 @@ if user_input:
                         import traceback
                         print(traceback.format_exc())
                     st.toast("Thanks for your positive feedback!")
-            
+
             with col2:
                 current_thumbs_down = st.button("👎", key=f"current_thumbs_down")
                 if current_thumbs_down:
                     try:
-                        # Log negative feedback in LangSmith
+                        # CORRECT way to log negative feedback in LangSmith
                         if run_id:
-                            langsmith_client.create_feedback(
+                            feedback_id = langsmith_client.create_feedback(
                                 run_id=run_id,
-                                key="user_feedback",
-                                score=0.0,
-                                comment="User provided negative feedback"
+                                key="user_score",  # Use "user_score" as the key
+                                score=0,  # Use integer 0 instead of 0.0
+                                comment="User provided negative feedback (thumbs down)"
                             )
-                            print(f"✅ Negative feedback logged for run_id: {run_id}")
+                            print(f"✅ Negative feedback logged for run_id: {run_id}, feedback_id: {feedback_id}")
                         else:
                             print("⚠️ No run_id available for feedback")
                     except Exception as e:
@@ -1204,7 +1222,7 @@ if user_input:
                         import traceback
                         print(traceback.format_exc())
                     st.toast("Thanks for your feedback! We'll use it to improve.")
-            
+
             with col3:
                 current_copy_btn = st.button("📋", key=f"current_copy")
                 if current_copy_btn:
