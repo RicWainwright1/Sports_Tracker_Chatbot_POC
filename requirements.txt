@@ -1,10 +1,29 @@
+# Core app and environment
 streamlit
 python-dotenv
 openai
 numpy
-pinecone
-anthropic
+pandas
+plotly
+
+# LangChain ecosystem
+langchain
 langchain-community
-elevenlabs
 langsmith
 tiktoken
+
+# Vector DB
+pinecone-client
+
+# LLM providers
+anthropic
+
+# Text-to-speech
+elevenlabs
+
+# Utilities (often included, but specify for clarity)
+pathlib
+typing-extensions
+
+# Optional: These may help with compatibility
+requests
