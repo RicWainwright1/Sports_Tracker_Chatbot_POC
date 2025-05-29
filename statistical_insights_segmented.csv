@@ -1,0 +1,12 @@
+variable_1,variable_2,type,segment,test,p_value,effect_size
+Age,Advertising Impact Channels,categorical_vs_categorical,ALL,Chi-square,0.0010774638364131255,0.23218561703724347
+Gender,Advertising Impact Channels,categorical_vs_categorical,ALL,Chi-square,0.00493306524771759,0.27794896305423855
+Gender,Long-Term Value,categorical_vs_categorical,ALL,Chi-square,0.0004803376260311641,0.17482587124059762
+Favorite Toy,Advertising Impact Channels,categorical_vs_categorical,ALL,Chi-square,0.005222681312417734,0.22379711028219842
+Play Frequency,Advertising Impact Channels,categorical_vs_categorical,ALL,Chi-square,0.03805632862512275,0.22700165580482112
+Toy Discovery,Developmental Benefits,categorical_vs_categorical,ALL,Chi-square,0.03493846862964771,0.22339364569373507
+Seasonal Interest,Digital Balance,categorical_vs_categorical,ALL,Chi-square,0.01976696556679765,0.11463925904949382
+Seasonal Interest,Long-Term Value,categorical_vs_categorical,ALL,Chi-square,0.009166061002696395,0.13050701643644858
+Digital vs. Physical,Sustainability Importance,categorical_vs_categorical,ALL,Chi-square,0.030893257392994214,0.11785441887085325
+New Toy Interest,Long-Term Value,categorical_vs_categorical,ALL,Chi-square,0.03365187926652206,0.166651897722317
+Budget Allocation (£/yr),Sustainability Importance,categorical_vs_categorical,ALL,Chi-square,0.009194087448558916,0.14341555542644124
